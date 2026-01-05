@@ -24,79 +24,108 @@ template <class T>
 class BSTree {
 private:
     BSNode<T>* root;
+    int n;  // Contador de elementos
 
     // Inserción recursiva
-    BSNode<T>* insert(BSNode<T>* n, const T& e) {
-        if (n == nullptr) {
+    BSNode<T>* insert(BSNode<T>* node, const T& e) {
+        if (node == nullptr) {
+            n++;
             return new BSNode<T>(e);
         }
-        if (e == n->elem) {
+        if (e == node->elem) {
             throw std::runtime_error("Elemento duplicado");
         }
-        if (e < n->elem) {
-            n->left = insert(n->left, e);
+        if (e < node->elem) {
+            node->left = insert(node->left, e);
         } else {
-            n->right = insert(n->right, e);
+            node->right = insert(node->right, e);
         }
-        return n;
+        return node;
+    }
+
+    // Búsqueda recursiva
+    T search(BSNode<T>* node, const T& e) const {
+        if (node == nullptr) {
+            throw std::runtime_error("Elemento no encontrado");
+        }
+        if (e == node->elem) {
+            return node->elem;
+        }
+        if (e < node->elem) {
+            return search(node->left, e);
+        } else {
+            return search(node->right, e);
+        }
     }
 
     // Búsqueda del mínimo
-    BSNode<T>* findMin(BSNode<T>* n) const {
-        while (n && n->left != nullptr) {
-            n = n->left;
+    BSNode<T>* findMin(BSNode<T>* node) const {
+        while (node && node->left != nullptr) {
+            node = node->left;
         }
-        return n;
+        return node;
     }
 
     // Eliminación recursiva
-    BSNode<T>* remove(BSNode<T>* n, const T& e) {
-        if (n == nullptr) return nullptr;
+    BSNode<T>* remove(BSNode<T>* node, const T& e) {
+        if (node == nullptr) {
+            throw std::runtime_error("Elemento no encontrado");
+        }
 
-        if (e < n->elem) {
-            n->left = remove(n->left, e);
-        } else if (e > n->elem) {
-            n->right = remove(n->right, e);
+        if (e < node->elem) {
+            node->left = remove(node->left, e);
+        } else if (e > node->elem) {
+            node->right = remove(node->right, e);
         } else {
             // Nodo encontrado
-            if (n->left == nullptr) {
-                BSNode<T>* tmp = n->right;
-                delete n;
+            if (node->left == nullptr) {
+                BSNode<T>* tmp = node->right;
+                delete node;
+                n--;
                 return tmp;
             }
-            if (n->right == nullptr) {
-                BSNode<T>* tmp = n->left;
-                delete n;
+            if (node->right == nullptr) {
+                BSNode<T>* tmp = node->left;
+                delete node;
+                n--;
                 return tmp;
             }
-            BSNode<T>* tmp = findMin(n->right);
-            n->elem = tmp->elem;
-            n->right = remove(n->right, tmp->elem);
+            BSNode<T>* tmp = findMin(node->right);
+            node->elem = tmp->elem;
+            node->right = remove(node->right, tmp->elem);
         }
-        return n;
+        return node;
     }
 
     // Impresión inorder
-    void print_inorder(std::ostream& out, BSNode<T>* n) const {
-        if (n == nullptr) return;
-        print_inorder(out, n->left);
-        out << n->elem << " ";
-        print_inorder(out, n->right);
+    void print_inorder(std::ostream& out, BSNode<T>* node) const {
+        if (node == nullptr) return;
+        print_inorder(out, node->left);
+        out << node->elem << " ";
+        print_inorder(out, node->right);
     }
 
     // Liberar memoria
-    void clear(BSNode<T>* n) {
-        if (!n) return;
-        clear(n->left);
-        clear(n->right);
-        delete n;
+    void clear(BSNode<T>* node) {
+        if (!node) return;
+        clear(node->left);
+        clear(node->right);
+        delete node;
     }
 
 public:
-    BSTree() : root(nullptr) {}
+    BSTree() : root(nullptr), n(0) {}
 
     ~BSTree() {
         clear(root);
+    }
+
+    int size() const {
+        return n;
+    }
+
+    T search(const T& e) const {
+        return search(root, e);
     }
 
     void insert(const T& e) {
@@ -118,4 +147,3 @@ public:
 };
 
 #endif // BSTREE_H
-
