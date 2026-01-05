@@ -1,130 +1,140 @@
-#ifndef BSTREE_H
-#define BSTREE_H
+#ifndef BSTREEDICT_H
+#define BSTREEDICT_H
 
 #include <ostream>
 #include <stdexcept>
+#include <string>
+#include "Dict.h"
 #include "BSNode.h"
+#include "TableEntry.h"
 
-template <typename T> 
-class BSTree {
+template <typename V> 
+class BSTreeDict : public Dict<V> {
     private:
+        BSNode<TableEntry<V>>* root;
+        int nelem;
 
-    int nelem;
-    BSNode<T> *root;
+        BSNode<TableEntry<V>>* search(BSNode<TableEntry<V>>* n, std::string key) const {
+            if (n == nullptr) {
+                throw std::runtime_error("Key not found!");
+            } else if (n->elem.key < key) {
+                return search(n->right, key);
+            } else if (n->elem.key > key) {
+                return search(n->left, key);
+            } else {
+                return n;
+            }
+        }
 
-    BSNode<T>* search(BSNode<T>* n, T e) const {
-        if (n == nullptr) {
-            throw std::runtime_error("Element not found!");
-        }else if (n->elem < e) {
-            return search(n->right, e);
-        }else if (n->elem > e) {
-            return search(n->left, e);
-        }else {
+        BSNode<TableEntry<V>>* insert(BSNode<TableEntry<V>>* n, std::string key, V value) {
+            if (n == nullptr) {
+                nelem++;
+                return new BSNode<TableEntry<V>>(TableEntry<V>(key, value));
+            } else if (n->elem.key == key) {
+                throw std::runtime_error("Key already exists!");
+            } else if (n->elem.key < key) {
+                n->right = insert(n->right, key, value);
+            } else {
+                n->left = insert(n->left, key, value);
+            }
             return n;
         }
-    }
-     BSNode<T>* insert(BSNode<T>* n, T e){
-        if (n == nullptr) {
-            n = new BSNode<T>(e);
-            return n;
-            this->nelem++;
-        }else if(n->elem== e){
-           throw std::runtime_error("Duplicated element!");
 
-        }else if (n->elem < e) {
-            n->right = insert(n->right, e);
-        }else  {
-            n->left = insert(n->left, e);
+        void print_inorder(std::ostream &out, BSNode<TableEntry<V>>* n) const {
+            if (n != nullptr) {
+                print_inorder(out, n->left);
+                out << n->elem << " ";
+                print_inorder(out, n->right);
+            }
         }
-        return n;
-    }
-    void print_inorder(std::ostream &out, BSNode<T>* n) const {
-        if (n != nullptr) {
-            print_inorder(out, n->left);
-            out << n->elem << " ";
-            print_inorder(out, n->right);
-        }
-    }
-    BSNode<T>* remove(BSNode<T>* n, T e){
-        if (n == nullptr) {
-            throw std::runtime_error("Element not found!");
-        }else if (n->elem < e) {
-            n->right = remove(n->right, e);
-        }else if (n->elem > e) {
-            n->left = remove(n->left, e);
-        }else {
-             if(n->left != nullptr && n->right != nullptr){
-                n->elem = max(n->left);
-                n->left = remove_max(n->left);
-        }else{
-            n = (n->left != nullptr) ? n->left : n->right;
-             
-            } 
-        }
-    return n;
-    }
 
-
-    T max(BSNode<T>* n) const {
-        if (n == nullptr) {
-            throw std::runtime_error("Element not found!");
-        }else if (n->right != nullptr) {
-            return max(n->right);
-        }else {
-            return n->elem;
-        }
-    }
-    BSNode<T>* remove_max(BSNode<T>* n){
-        if (n->right == nullptr) {
-            return n->left;
-        }else {
-            n->right = remove_max(n->right);
+        BSNode<TableEntry<V>>* remove(BSNode<TableEntry<V>>* n, std::string key) {
+            if (n == nullptr) {
+                throw std::runtime_error("Key not found!");
+            } else if (n->elem.key < key) {
+                n->right = remove(n->right, key);
+            } else if (n->elem.key > key) {
+                n->left = remove(n->left, key);
+            } else {
+                // Nodo encontrado
+                if (n->left != nullptr && n->right != nullptr) {
+                    // Dos hijos: reemplazar con el máximo del subárbol izquierdo
+                    n->elem = max(n->left);
+                    n->left = remove_max(n->left);
+                } else {
+                    // Un hijo o ninguno
+                    BSNode<TableEntry<V>>* temp = n;
+                    n = (n->left != nullptr) ? n->left : n->right;
+                    delete temp;
+                }
+                nelem--;
+            }
             return n;
         }
-    }
-    void delete_cascade(BSNode<T>* n){
-        if (n != nullptr) {
-            delete_cascade(n->left);
-            delete_cascade(n->right);
-            delete n;
-        }
-    }
 
-        //miembros privados
+        TableEntry<V> max(BSNode<TableEntry<V>>* n) const {
+            if (n == nullptr) {
+                throw std::runtime_error("Empty tree!");
+            } else if (n->right != nullptr) {
+                return max(n->right);
+            } else {
+                return n->elem;
+            }
+        }
+
+        BSNode<TableEntry<V>>* remove_max(BSNode<TableEntry<V>>* n) {
+            if (n->right == nullptr) {
+                BSNode<TableEntry<V>>* temp = n->left;
+                delete n;
+                return temp;
+            } else {
+                n->right = remove_max(n->right);
+                return n;
+            }
+        }
+
+        void delete_cascade(BSNode<TableEntry<V>>* n) {
+            if (n != nullptr) {
+                delete_cascade(n->left);
+                delete_cascade(n->right);
+                delete n;
+            }
+        }
+
     public:
-        // miembros públicos
-    BSTree() {
-        this->nelem = 0;
-        this->root = nullptr;
-    }
-    int size() const {
-        return this->nelem;
-    }
-    T search(T e) const {
-        return search(this->root, e)->elem;
-    }
-    T operator[](T e) const{
-        return search(e);
-    }
-    void insert(T e){
-        this->root = insert(this->root, e);
-        nelem++;
-    }
-    friend std::ostream& operator<<(std::ostream &out, const BSTree<T> &bst)
-    {
-        bst.print_inorder(out, bst.root);
-        return out;
-    }
-    void remove(T e){
-        this->root = remove(this->root, e);
-        nelem--;
-    }
-    ~BSTree() {
-        delete_cascade(this->root);
-    }
-   
+        BSTreeDict() : root(nullptr), nelem(0) {}
 
-    
+        ~BSTreeDict() {
+            delete_cascade(root);
+        }
+
+        int entries() override {
+            return nelem;
+        }
+
+        V search(std::string key) override {
+            return search(root, key)->elem.value;
+        }
+
+        V operator[](std::string key) {
+            return search(key);
+        }
+
+        void insert(std::string key, V value) override {
+            root = insert(root, key, value);
+        }
+
+        V remove(std::string key) override {
+            BSNode<TableEntry<V>>* node = search(root, key);
+            V value = node->elem.value;
+            root = remove(root, key);
+            return value;
+        }
+
+        friend std::ostream& operator<<(std::ostream &out, const BSTreeDict<V> &bst) {
+            bst.print_inorder(out, bst.root);
+            return out;
+        }
 };
 
 #endif
